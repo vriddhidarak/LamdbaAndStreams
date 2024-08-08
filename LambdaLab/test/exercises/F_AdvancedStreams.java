@@ -5,15 +5,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -25,6 +22,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Map.entry;
+import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -46,9 +44,11 @@ public class F_AdvancedStreams {
      *
      * @throws IOException
      */
-    @Test @Ignore
+    @Test
     public void f1_mapLengthToWordList() throws IOException {
-        Map<Integer, List<String>> result = null; // TODO
+        Map<Integer, List<String>> result = reader.lines()
+                .flatMap(SPLIT_PATTERN::splitAsStream)
+                .collect(Collectors.groupingBy(String::length)); // TODO
 
         assertEquals(10, result.get(7).size());
         assertEquals(Set.of("beauty's", "increase", "ornament"), new HashSet<>(result.get(8)));
@@ -57,6 +57,7 @@ public class F_AdvancedStreams {
         assertEquals(List.of("substantial"), result.get(11));
         assertFalse(result.containsKey(12));
     }
+
     // Hint:
     // <editor-fold defaultstate="collapsed">
     // Use Collectors.groupingBy().
@@ -72,9 +73,11 @@ public class F_AdvancedStreams {
      *
      * @throws IOException
      */
-    @Test @Ignore
+    @Test
     public void f2_mapLengthToWordCount() throws IOException {
-        Map<Integer, Long> result = null; // TODO
+        Map<Integer, Long> result = reader.lines()
+                .flatMap(SPLIT_PATTERN::splitAsStream)
+                .collect(Collectors.groupingBy(String::length,Collectors.counting())); // TODO
 
         assertEquals(Map.ofEntries(entry( 1,  1L),
                                    entry( 2, 11L),
@@ -110,7 +113,10 @@ public class F_AdvancedStreams {
      */
     @Test @Ignore
     public void f3_wordFrequencies() throws IOException {
-        Map<String, Long> result = null; // TODO
+
+        Map<String, Long> result = reader.lines()
+                .flatMap(SPLIT_PATTERN::splitAsStream)
+                .collect(Collectors.groupingBy(word->word,Collectors.counting())); // TODO
 
         assertEquals(2L, (long)result.get("tender"));
         assertEquals(6L, (long)result.get("the"));
@@ -181,8 +187,10 @@ public class F_AdvancedStreams {
     public void f5_separateOddEvenSums() {
         IntStream input = new Random(987523).ints(20, 0, 100);
 
-        int sumEvens = 0; // TODO
-        int sumOdds  = 0; // TODO
+        Map<Boolean,Integer> getSums = input.boxed()
+                .collect(Collectors.partitioningBy(i->(i%2)==0,Collectors.summingInt(i->i))); // TODO
+        int sumEvens = getSums.get(true);
+        int sumOdds  = getSums.get(false);
 
         assertEquals(516, sumEvens);
         assertEquals(614, sumOdds);
@@ -212,7 +220,16 @@ public class F_AdvancedStreams {
             "k", "l", "m", "n", "o", "p", "q", "r", "s", "t")
             .parallelStream();
 
-        String result = input.collect(null, null, null).toString();
+        String result =
+                input.collect(StringBuilder::new,
+                                (sb, s) -> sb.insert(0, s).append(s),
+                                (sb1, sb2) -> {
+                                    int half = sb2.length() / 2;
+                                    sb1.insert(0, sb2.substring(0, half));
+                                    sb1.append(sb2.substring(half));
+                                })
+                        .toString();
+
         // TODO fill in lambda expressions or method references
         // in place of the nulls in the line above.
 
@@ -250,7 +267,6 @@ public class F_AdvancedStreams {
     static class TotalAndDistinct {
         private int count = 0;
         private final Set<String> set = new HashSet<>();
-
         // rely on implicit no-arg constructor
 
         void accumulate(String s) {
@@ -303,7 +319,7 @@ public class F_AdvancedStreams {
     @Before
     public void z_setUpBufferedReader() throws IOException {
         reader = Files.newBufferedReader(
-                Paths.get("SonnetI.txt"), StandardCharsets.UTF_8);
+                Paths.get("LambdaLab/SonnetI.txt"), StandardCharsets.UTF_8);
     }
 
     @After
