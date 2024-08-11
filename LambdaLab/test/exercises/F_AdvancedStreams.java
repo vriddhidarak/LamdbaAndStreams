@@ -153,9 +153,12 @@ public class F_AdvancedStreams {
      *
      * @throws IOException
      */
-    @Test @Ignore
+    @Test
     public void f4_nestedMaps() throws IOException {
-        Map<String, Map<Integer, List<String>>> result = null; // TODO
+        Map<String, Map<Integer, List<String>>> result = reader.lines()
+                .flatMap(SPLIT_PATTERN::splitAsStream)
+                .collect(Collectors.groupingBy(word->word.substring(0,1)
+                        ,Collectors.groupingBy(String::length))); // TODO
 
         assertEquals("[abundance]", result.get("a").get(9).toString());
         assertEquals("[by, be, by]", result.get("b").get(2).toString());
@@ -289,7 +292,7 @@ public class F_AdvancedStreams {
     @Test @Ignore
     public void f7_countTotalAndDistinctWords() {
         List<String> allWords = reader.lines()
-                                      .map(String::toLowerCase)
+                              .map(String::toLowerCase)
                                       .flatMap(line -> SPLIT_PATTERN.splitAsStream(line))
                                       .collect(Collectors.toList());
 
